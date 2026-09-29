@@ -23,6 +23,7 @@ jobs:
       DATABASE_URL: postgresql://tastepipe:tastepipe@localhost:5432/tastepipe
       APP_DATABASE_URL: postgresql://tastepipe_app:tastepipe_app@localhost:5432/tastepipe
       PGPASSWORD: tastepipe
+      TASTEPIPE_TEST_ALLOW_WRITES: "1"  # CI database is disposable
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
