@@ -1,0 +1,15 @@
+# Connection settings come from the environment so nothing secret is committed.
+# Defaults match docker-compose.yml. Use the OWNER role: it can read the app tables,
+# which are protected by row-level security (see README, "Gold layer").
+tastepipe:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('DBT_HOST', 'localhost') }}"
+      port: "{{ env_var('DBT_PORT', '5432') | as_number }}"
+      user: "{{ env_var('DBT_USER', 'tastepipe') }}"
+      password: "{{ env_var('DBT_PASSWORD', 'tastepipe') }}"
+      dbname: "{{ env_var('DBT_DBNAME', 'tastepipe') }}"
+      schema: public
+      threads: 4

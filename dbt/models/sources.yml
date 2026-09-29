@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: silver
+    description: Cleaned, validated and deduplicated Spotify data written by the Python pipeline.
+    schema: silver
+    tables:
+      - name: track
+      - name: track_alias
+      - name: playlist
+      - name: playlist_track
+      - name: rejected_record
+      - name: run_log
+        loaded_at_field: started_at
+        freshness:
+          warn_after: {count: 2, period: day}
+          error_after: {count: 7, period: day}
+
+  - name: app
+    description: >
+      Application tables (users, playlists, versions). Protected by row-level security, so
+      dbt must connect as the table owner. Personal and free-text columns are dropped in staging.
+    schema: public
+    tables:
+      - name: users
+      - name: playlists
+      - name: playlist_versions
+      - name: playlist_tracks

@@ -2,7 +2,7 @@
 
 A chatbot that builds a playlist from someone's **public** Spotify profile, plus the data pipeline underneath it. You give it a username, answer a few questions about intent, mood and length, and it builds a playlist from songs the profile already likes and songs similar to them. You can then refine it in conversation and keep every playlist in a personal library.
 
-> **Status: Phase 4 (playlist agent).** The chatbot works end to end: give it a username, answer three questions, get a playlist, refine it in conversation, approve it. Every suggestion is verified against Spotify before it can appear. The gold layer (dbt), library detail and export, and CRM sync are in later phases (see the roadmap).
+> **Status: Phase 3 and 4 (gold layer and playlist agent).** The chatbot works end to end: give it a username, answer three questions, get a playlist, refine it in conversation, approve it. Every suggestion is verified against Spotify before it can appear. Library detail and export, and CRM sync are in later phases (see the roadmap).
 >
 > This is an original portfolio project built on public and synthetic data. It is not affiliated with Spotify.
 
@@ -43,6 +43,8 @@ Last.fm similar tracks ────┘      │
 | Agent: verification | Nothing the model says reaches the playlist unchecked. Each suggestion must match a real Spotify search result on title **and** artist, and be the same kind of recording (a live take never stands in for a studio track). Failures are dropped and counted; the unverified rate is stored on every version. |
 | Agent: refinement | Feedback like "swap the slow ones" or "same mood as the Entourage soundtrack" becomes an edit plan: removals, additions, and optionally a reference lookup that pulls real tracks from a matching Spotify playlist. Each turn appends an immutable version with a diff. |
 | Agent: safety | User feedback, usernames and Spotify text are passed to the model inside escaped `<untrusted_...>` tags. The agent service only accepts calls from the web server (shared secret plus verified user ID), and playlists are written under row-level security. |
+| Gold (dbt) | A star schema over silver and the app tables: `dim_track`, `dim_artist`, `dim_source_profile`, `dim_listener`, `dim_mood`, `dim_intent`, `dim_date`, `dim_playlist_state` (SCD2 snapshot of status, favourite and export flags), and facts for playlist tracks, taste signals, requests and versions. Marts cover pipeline quality, rejection reasons, agent verification rate, mood popularity and listener libraries. 59 data tests (keys, relationships, ranges, composite grain), singular tests (contiguous versions, reject-rate consistency, latest run succeeded), 2 unit tests, and source freshness. |
+| Gold privacy | Identities are md5-hashed. Titles, feedback text, rationale, refresh tokens, third-party usernames and raw payloads never reach gold, and a test fails the build if a column like that appears. |
 | UI | Chat shell with a step tracker, quick-reply chips and a live region for screen readers. Library with search, status filter and sorting. Mobile first. |
 
 Spotify's content policy limits caching, so the app tables and silver store only IDs, ISRCs, normalized match keys, durations and the app's own fields (rationale, tags, feedback). Titles and artwork are re-fetched at display time.
@@ -71,6 +73,15 @@ python -m tastepipe.silver                        # clean, validate, deduplicate
 
 Development-mode Spotify apps only work for users you add to the app's allowlist.
 
+## Gold layer (dbt)
+
+```bash
+psql "$DATABASE_URL" -f db/seed/demo_data.sql   # synthetic data, fresh database only (it truncates)
+cd dbt && dbt build --profiles-dir .            # DBT_HOST/PORT/USER/PASSWORD/DBNAME override the defaults
+```
+
+dbt must connect as the table owner (or a `BYPASSRLS` analytics role): the app tables enforce row-level security, so a restricted role would see no rows. The seed is entirely synthetic.
+
 ## Tests
 
 ```bash
@@ -79,7 +90,7 @@ cd pipeline && pytest        # unit tests always run; DB tests need DATABASE_URL
 cd web && npm run typecheck && npm test && npm run build
 ```
 
-CI runs both, with a real Postgres, on every push.
+CI runs both, plus `dbt build` against seeded demo data, with a real Postgres, on every push.
 
 ## Known limits
 
@@ -95,7 +106,7 @@ The UI follows the [BYU–Hawaii UX and Design Guidelines](https://marcom.byuh.e
 
 1. **Foundation** (done): schema, login, bronze, UI shells
 2. **Silver and validation** (done, MusicBrainz enrichment still to come): typed models, ISRC entity resolution, quarantine with reason codes, quality gate
-3. **Gold**: dbt star schema and tests, taste-profile models
+3. **Gold** (done): dbt star schema, SCD2 snapshot, marts, tests and unit tests
 4. **Agent** (done): LangGraph generation and refinement, every suggestion verified against Spotify Search
 5. **Library**: detail and diff views, export to Spotify, drift reconciliation
 6. **CRM sync**: HubSpot / Salesforce upserts by external ID behind an approval queue

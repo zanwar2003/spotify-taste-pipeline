@@ -1,0 +1,135 @@
+version: 2
+
+models:
+  - name: dim_artist
+    columns:
+      - {name: artist_key, tests: [unique, not_null]}
+  - name: dim_track
+    columns:
+      - {name: track_key, tests: [unique, not_null]}
+      - name: artist_key
+        tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_artist'), field: artist_key}
+      - name: duration_ms
+        tests:
+          - between:
+              arguments: {min_value: 1000, max_value: 3600000}
+  - name: dim_source_profile
+    columns:
+      - {name: source_profile_key, tests: [unique, not_null]}
+  - name: dim_listener
+    columns:
+      - {name: listener_key, tests: [unique, not_null]}
+  - name: dim_mood
+    columns:
+      - {name: mood_key, tests: [unique, not_null]}
+  - name: dim_intent
+    columns:
+      - {name: intent_key, tests: [unique, not_null]}
+  - name: dim_date
+    columns:
+      - {name: date_key, tests: [unique, not_null]}
+
+  - name: fact_playlist_track
+    tests:
+      - unique_combination:
+          arguments: {columns: [source_playlist_id, position]}
+    columns:
+      - name: track_key
+        tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_track'), field: track_key}
+      - name: source_profile_key
+        tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_source_profile'), field: source_profile_key}
+  - name: fact_taste_signal
+    tests:
+      - unique_combination:
+          arguments: {columns: [source_profile_key, track_key]}
+    columns:
+      - name: share
+        tests:
+          - between:
+              arguments: {min_value: 0, max_value: 1}
+      - name: taste_rank
+        tests:
+          - between:
+              arguments: {min_value: 1, max_value: 100000}
+  - name: fact_playlist_request
+    columns:
+      - {name: playlist_id, tests: [unique, not_null]}
+      - name: listener_key
+        tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_listener'), field: listener_key}
+      - name: mood_key
+        tests:
+          - relationships:
+              arguments: {to: ref('dim_mood'), field: mood_key}
+      - name: intent_key
+        tests:
+          - relationships:
+              arguments: {to: ref('dim_intent'), field: intent_key}
+      - name: created_date_key
+        tests:
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_key}
+      - name: status
+        tests:
+          - accepted_values:
+              arguments: {values: [draft, approved, exported, archived]}
+  - name: fact_playlist_version
+    tests:
+      - unique_combination:
+          arguments: {columns: [playlist_id, version_no]}
+    columns:
+      - {name: version_id, tests: [unique, not_null]}
+      - name: playlist_id
+        tests:
+          - relationships:
+              arguments: {to: ref('fact_playlist_request'), field: playlist_id}
+      - name: unverified_rate
+        tests:
+          - between:
+              arguments: {min_value: 0, max_value: 1}
+  - name: taste_profile
+    columns:
+      - {name: source_profile_key, tests: [unique, not_null]}
+      - name: top_artist_share
+        tests:
+          - between:
+              arguments: {min_value: 0, max_value: 1}
+
+  - name: mart_pipeline_quality
+    columns:
+      - {name: run_id, tests: [unique, not_null]}
+      - name: reject_rate
+        tests:
+          - between:
+              arguments: {min_value: 0, max_value: 1}
+  - name: mart_rejection_reasons
+    tests:
+      - unique_combination:
+          arguments: {columns: [reason_code, entity, severity]}
+  - name: mart_agent_quality
+    columns:
+      - {name: date_key, tests: [unique, not_null]}
+  - name: mart_mood_popularity
+    columns:
+      - {name: mood_name, tests: [unique, not_null]}
+  - name: mart_listener_library
+    columns:
+      - {name: listener_key, tests: [unique, not_null]}
+  - name: dim_playlist_state
+    tests:
+      - unique_combination:
+          arguments: {columns: [playlist_id, valid_from]}
+    columns:
+      - name: is_current
+        tests: [not_null]

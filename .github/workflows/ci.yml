@@ -44,6 +44,40 @@ jobs:
         working-directory: pipeline
         run: pytest -q
 
+  dbt:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tastepipe
+          POSTGRES_PASSWORD: tastepipe
+          POSTGRES_DB: tastepipe
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tastepipe" --health-interval 5s
+          --health-timeout 3s --health-retries 10
+    env:
+      PGPASSWORD: tastepipe
+      DBT_HOST: localhost
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Load schema and synthetic demo data
+        run: |
+          for f in db/init/*.sql db/seed/demo_data.sql; do
+            psql -h localhost -U tastepipe -d tastepipe -v ON_ERROR_STOP=1 -f "$f"
+          done
+      - run: pip install dbt-postgres
+      - name: dbt build (models, snapshot, tests)
+        working-directory: dbt
+        run: dbt build --profiles-dir .
+      - name: Source freshness
+        working-directory: dbt
+        run: dbt source freshness --profiles-dir .
+
   web:
     runs-on: ubuntu-latest
     defaults:

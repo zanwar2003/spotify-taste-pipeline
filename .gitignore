@@ -22,3 +22,8 @@ next-env.d.ts
 .dagster/
 dagster_home/
 .DS_Store
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
