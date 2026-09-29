@@ -28,8 +28,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Apply schema
-        run: psql -h localhost -U tastepipe -d tastepipe -v ON_ERROR_STOP=1 -f db/init/001_schema.sql
+      - name: Apply migrations
+        run: |
+          for f in db/init/*.sql; do
+            psql -h localhost -U tastepipe -d tastepipe -v ON_ERROR_STOP=1 -f "$f"
+          done
       - name: Install
         working-directory: pipeline
         run: pip install -e '.[dev]'
