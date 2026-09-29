@@ -49,6 +49,7 @@ class PlaylistRow:
     owner_spotify_id: str | None
     is_public: bool | None
     track_total: int | None
+    source_profile_id: str | None = None
 
 
 @dataclass
@@ -103,6 +104,7 @@ def extract(pages: list[dict[str, Any]]) -> Extracted:
             continue
 
         if key.startswith("user:"):
+            profile = key.split(":")[1]
             for idx, item in enumerate(items):
                 out.items_in += 1
                 pid = item.get("id") if isinstance(item, dict) else None
@@ -118,6 +120,7 @@ def extract(pages: list[dict[str, Any]]) -> Extracted:
                         (item.get("owner") or {}).get("id"),
                         item.get("public"),
                         total if isinstance(total, int) and total >= 0 else None,
+                        profile,
                     )
                 )
         elif (m := PLAYLIST_PAGE_KEY.match(key)) is not None:
@@ -211,14 +214,16 @@ def _write(conn: psycopg.Connection, extracted: Extracted, resolution: Resolutio
         for p in extracted.playlists:
             cur.execute(
                 """INSERT INTO silver.playlist
-                   (spotify_playlist_id, owner_spotify_id, is_public, track_total)
-                   VALUES (%s,%s,%s,%s)
+                   (spotify_playlist_id, owner_spotify_id, is_public, track_total, source_profile_id)
+                   VALUES (%s,%s,%s,%s,%s)
                    ON CONFLICT (spotify_playlist_id) DO UPDATE
                      SET owner_spotify_id = EXCLUDED.owner_spotify_id,
                          is_public = EXCLUDED.is_public,
                          track_total = EXCLUDED.track_total,
+                         source_profile_id = EXCLUDED.source_profile_id,
                          last_seen_at = now()""",
-                (p.spotify_playlist_id, p.owner_spotify_id, p.is_public, p.track_total),
+                (p.spotify_playlist_id, p.owner_spotify_id, p.is_public, p.track_total,
+                 p.source_profile_id),
             )
 
         # Playlists whose tracks we have but whose listing page we did not ingest.

@@ -50,3 +50,38 @@ def test_private_or_missing_user_yields_no_pages():
     token_route()
     respx.get(f"{API_BASE}/users/ghost/playlists").mock(return_value=httpx.Response(404))
     assert list(make_client([]).user_playlists("ghost")) == []
+
+
+@respx.mock
+def test_search_tracks_returns_items_and_survives_empty_result():
+    token_route()
+    route = respx.get(f"{API_BASE}/search")
+    route.mock(
+        side_effect=[
+            httpx.Response(200, json={"tracks": {"items": [{"id": "a"}, None, {"id": "b"}]}}),
+            httpx.Response(200, json={}),
+        ]
+    )
+    client = make_client([])
+    assert [t["id"] for t in client.search_tracks('track:"x" artist:"y"')] == ["a", "b"]
+    assert client.search_tracks("nothing") == []
+
+
+@respx.mock
+def test_tracks_batches_in_fifties_and_skips_missing():
+    token_route()
+    ids = [f"{i:022d}" for i in range(120)]
+    route = respx.get(f"{API_BASE}/tracks").mock(
+        side_effect=lambda req: httpx.Response(
+            200,
+            json={
+                "tracks": [
+                    {"id": i} if n % 2 == 0 else None
+                    for n, i in enumerate(req.url.params["ids"].split(","))
+                ]
+            },
+        )
+    )
+    found = make_client([]).tracks(ids)
+    assert route.call_count == 3
+    assert len(found) == 60 and ids[0] in found and ids[1] not in found

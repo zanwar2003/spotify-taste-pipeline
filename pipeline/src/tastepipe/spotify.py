@@ -88,3 +88,26 @@ class SpotifyClient:
 
     def playlist_tracks(self, playlist_id: str) -> Iterator[dict[str, Any]]:
         yield from self.paginate(f"{API_BASE}/playlists/{playlist_id}/tracks")
+
+    # -- search and lookup (used to verify and display agent suggestions) -----------------
+
+    def search_tracks(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+        """Return raw track objects for a free-text query (empty list on any miss)."""
+        _, body = self.get(f"{API_BASE}/search", {"q": query, "type": "track", "limit": limit})
+        return [t for t in (body.get("tracks") or {}).get("items", []) if isinstance(t, dict)]
+
+    def search_playlists(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+        _, body = self.get(f"{API_BASE}/search", {"q": query, "type": "playlist", "limit": limit})
+        # Spotify returns null entries for unavailable playlists; drop them.
+        return [p for p in (body.get("playlists") or {}).get("items", []) if isinstance(p, dict)]
+
+    def tracks(self, ids: list[str]) -> dict[str, dict[str, Any]]:
+        """Fetch track objects by ID (batches of 50). Missing IDs are simply absent."""
+        found: dict[str, dict[str, Any]] = {}
+        for start in range(0, len(ids), 50):
+            batch = ids[start : start + 50]
+            _, body = self.get(f"{API_BASE}/tracks", {"ids": ",".join(batch)})
+            for t in body.get("tracks") or []:
+                if isinstance(t, dict) and t.get("id"):
+                    found[t["id"]] = t
+        return found
