@@ -122,3 +122,20 @@ CREATE TABLE bronze.raw_api_response (
     UNIQUE (source, request_key, payload_sha256)
 );
 CREATE INDEX bronze_raw_lookup_idx ON bronze.raw_api_response (source, request_key, fetched_at DESC);
+
+-- ---------------------------------------------------------------- app role
+-- The web app connects as this role. It must NOT be a superuser or have
+-- BYPASSRLS, otherwise the row-level security policies above are ignored.
+-- (Local dev password only; set a real one via your secrets manager elsewhere.)
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'tastepipe_app') THEN
+        CREATE ROLE tastepipe_app LOGIN PASSWORD 'tastepipe_app' NOSUPERUSER NOBYPASSRLS;
+    END IF;
+END
+$$;
+GRANT USAGE ON SCHEMA public TO tastepipe_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON
+    users, playlists, playlist_versions, playlist_tracks, tags, playlist_tags
+    TO tastepipe_app;
