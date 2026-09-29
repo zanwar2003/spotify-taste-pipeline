@@ -21,7 +21,7 @@ Spotify development-mode apps allow at most five allowlisted test users, so this
 
 ## 2. Agent (Render)
 1. New > Blueprint > pick this repo (it reads `render.yaml`).
-2. Set the secrets: `DATABASE_URL` (Neon direct, owner), `APP_DATABASE_URL` (app role), `AGENT_INTERNAL_TOKEN` (`openssl rand -hex 32`), `ANTHROPIC_API_KEY`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`.
+2. Set the secrets: `DATABASE_URL` (Neon direct, owner), `APP_DATABASE_URL` (app role), `AGENT_INTERNAL_TOKEN` (`openssl rand -hex 32`), `GROQ_API_KEY` (free key from console.groq.com; `LLM_PROVIDER=groq` is preset in the blueprint), `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`.
 3. Note the service URL, for example `https://tastepipe-agent.onrender.com`.
 
 ## 3. Web (Vercel)
@@ -33,6 +33,8 @@ Spotify development-mode apps allow at most five allowlisted test users, so this
 Add `https://<your-app>.vercel.app/api/auth/callback` as a redirect URI, and add each tester's Spotify email under User Management.
 
 ## Notes
+- To use Claude instead, set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`. Gemini and OpenRouter work too (`LLM_PROVIDER=gemini` with `GEMINI_API_KEY`, and so on).
+- Free models suggest fewer real songs than Claude; the Spotify check drops the rest, so drafts may come back shorter.
 - The first request after idle is slow (Render wake plus Neon wake). Open `https://<agent>/healthz` first to warm it.
 - Generation can take about a minute; the web route allows up to 120 s.
 - Rotate any key that was ever pasted somewhere public.

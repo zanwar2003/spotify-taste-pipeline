@@ -116,7 +116,7 @@ def create_app(service: AgentService, internal_token: str) -> FastAPI:
 def create_default_app() -> FastAPI:
     """Build the real service from environment variables."""
     from ..config import Settings
-    from .llm import AnthropicLLM
+    from .llm_openai import make_llm
 
     settings = Settings.from_env()
     app_dsn = os.environ.get("APP_DATABASE_URL")
@@ -129,7 +129,7 @@ def create_default_app() -> FastAPI:
         owner_dsn=settings.database_url,
         app_dsn=app_dsn,
         spotify=SpotifyClient(settings.spotify_client_id, settings.spotify_client_secret),
-        llm=AnthropicLLM(),
+        llm=make_llm(),
     )
     return create_app(service, token)
 

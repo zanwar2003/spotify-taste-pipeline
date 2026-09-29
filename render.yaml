@@ -11,6 +11,7 @@ services:
       - {key: DATABASE_URL, sync: false}
       - {key: APP_DATABASE_URL, sync: false}
       - {key: AGENT_INTERNAL_TOKEN, sync: false}
-      - {key: ANTHROPIC_API_KEY, sync: false}
+      - {key: LLM_PROVIDER, value: groq}
+      - {key: GROQ_API_KEY, sync: false}
       - {key: SPOTIFY_CLIENT_ID, sync: false}
       - {key: SPOTIFY_CLIENT_SECRET, sync: false}
