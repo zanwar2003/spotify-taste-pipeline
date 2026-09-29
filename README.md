@@ -73,6 +73,8 @@ python -m tastepipe.silver                        # clean, validate, deduplicate
 
 Development-mode Spotify apps only work for users you add to the app's allowlist.
 
+Free hosted deployment (Vercel, Neon, Render): see [docs/DEPLOY.md](docs/DEPLOY.md).
+
 ## Gold layer (dbt)
 
 ```bash

@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { fail, proxyToAgent, readJson } from "@/lib/agent";
 
 export const dynamic = "force-dynamic";
+// Generation makes many Spotify lookups; allow longer than the platform default.
+export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
   const body = await readJson(req);

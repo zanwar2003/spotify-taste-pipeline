@@ -1,0 +1,16 @@
+# Render Blueprint for the playlist agent (free web service; sleeps after 15 idle minutes).
+services:
+  - type: web
+    name: tastepipe-agent
+    runtime: docker
+    plan: free
+    dockerfilePath: ./pipeline/Dockerfile
+    dockerContext: ./pipeline
+    healthCheckPath: /healthz
+    envVars:
+      - {key: DATABASE_URL, sync: false}
+      - {key: APP_DATABASE_URL, sync: false}
+      - {key: AGENT_INTERNAL_TOKEN, sync: false}
+      - {key: ANTHROPIC_API_KEY, sync: false}
+      - {key: SPOTIFY_CLIENT_ID, sync: false}
+      - {key: SPOTIFY_CLIENT_SECRET, sync: false}
