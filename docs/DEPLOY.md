@@ -12,12 +12,11 @@ Spotify development-mode apps allow at most five allowlisted test users, so this
 
 ## 1. Database (Neon)
 1. Create a Neon project. Copy two connection strings: **direct** (owner) and **pooled**.
-2. Apply the schema with the direct string:
+2. Apply the schema (the script also sets a random password on the app role):
    ```bash
-   for f in db/init/*.sql; do psql "$NEON_DIRECT_URL" -v ON_ERROR_STOP=1 -f "$f"; done
-   psql "$NEON_DIRECT_URL" -c "ALTER ROLE tastepipe_app PASSWORD '<new long random password>'"
+   NEON_DIRECT_URL='<direct owner string>' ./scripts/setup_neon.sh
    ```
-   The migration creates `tastepipe_app` with a default password, so **change it** as above.
+   The migration creates `tastepipe_app` with a default password; the script replaces it and prints the new one.
 3. Build the app-role URL: the pooled string with user `tastepipe_app` and the new password.
 
 ## 2. Agent (Render)
